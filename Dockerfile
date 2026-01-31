@@ -20,5 +20,5 @@ COPY app.py .
 # Expose port
 EXPOSE 8000
 
-# Run app
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the app directly with python
+CMD ["python", "app.py"]
