@@ -11,16 +11,12 @@ RUN apt-get update && apt-get install -y \
 # Copy files
 COPY requirements.txt .
 COPY app.py .
-COPY start.sh .
 
-# Install Python dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Make start script executable
-RUN chmod +x start.sh
 
 # Expose port
 EXPOSE 8000
 
-# Run start script
-CMD ["./start.sh"]
+# Run with fixed port 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
