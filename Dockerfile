@@ -8,17 +8,19 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Copy files
 COPY requirements.txt .
+COPY app.py .
+COPY start.sh .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app
-COPY app.py .
+# Make start script executable
+RUN chmod +x start.sh
 
 # Expose port
 EXPOSE 8000
 
-# Run the app directly with python
-CMD ["python", "app.py"]
+# Run start script
+CMD ["./start.sh"]
