@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import base64
 import io
@@ -215,17 +216,11 @@ def detect_ai_voice(features):
     
     return classification, confidence, explanation
 
+
+
 @app.get("/")
-async def root():
-    return {
-        "message": "AI Voice Detection API",
-        "status": "online",
-        "supported_languages": ["Tamil", "English", "Hindi", "Malayalam", "Telugu"],
-        "endpoints": {
-            "detection": "/detect-voice (POST)",
-            "health": "/health (GET)"
-        }
-    }
+async def serve_ui():
+    return FileResponse("index.html")
 
 @app.get("/health")
 async def health_check():
