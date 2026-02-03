@@ -115,79 +115,142 @@ def extract_audio_features(audio_data, sr):
 
 def detect_ai_voice(features):
     """
-    AI Voice Detection Algorithm based on audio features
+    IMPROVED AI Voice Detection Algorithm - Tuned for Modern TTS Systems
     
-    Key indicators:
-    - AI voices tend to have more consistent spectral features (lower std dev)
-    - AI voices have smoother pitch variations
-    - AI voices lack natural breathing artifacts
-    - AI voices have very consistent energy levels
+    Calibrated to detect sophisticated AI voices like ElevenLabs, Google TTS, etc.
+    Key strategy: AI voices are TOO perfect - we look for unnatural consistency.
     """
     
     ai_score = 0.0
     human_score = 0.0
     indicators = []
+    pitch_variation_coefficient = 0.0  # Initialize for later use
     
-    # 1. Spectral Consistency Check
-    # AI voices are typically TOO consistent
+    # 1. Spectral Consistency - AI is suspiciously consistent
     spectral_consistency = features['spectral_centroid_std'] / (features['spectral_centroid_mean'] + 1e-6)
-    if spectral_consistency < 0.15:  # Very consistent = likely AI
-        ai_score += 0.20
-        indicators.append("Very consistent spectral characteristics")
-    elif spectral_consistency > 0.35:  # More variation = likely human
-        human_score += 0.15
+    if spectral_consistency < 0.22:
+        ai_score += 0.30
+        indicators.append("Unnaturally consistent spectral pattern")
+    elif spectral_consistency < 0.30:
+        ai_score += 0.15
+    elif spectral_consistency > 0.40:
+        human_score += 0.20
         indicators.append("Natural spectral variation")
     
-    # 2. MFCC Variance Analysis
-    # Human voices have more natural variation in formants
+    # 2. MFCC Analysis
     mfcc_variance_avg = np.mean(features['mfcc_var'])
-    if mfcc_variance_avg < 50:  # Low variance = AI
-        ai_score += 0.18
-        indicators.append("Low formant variation")
-    elif mfcc_variance_avg > 150:  # Higher variance = human
-        human_score += 0.15
-        indicators.append("Natural formant patterns")
+    mfcc_std_avg = np.mean(features['mfcc_std'])
     
-    # 3. Pitch Variation Analysis
-    # AI voices have unnaturally smooth pitch
+    if mfcc_variance_avg < 100:
+        ai_score += 0.25
+        indicators.append("Controlled formant characteristics")
+    elif mfcc_variance_avg < 150:
+        ai_score += 0.12
+    elif mfcc_variance_avg > 250:
+        human_score += 0.18
+        indicators.append("Natural formant variation")
+    
+    if mfcc_std_avg < 20:
+        ai_score += 0.18
+        indicators.append("Highly stable vocal tract model")
+    
+    # 3. Pitch Analysis - AI pitch is too clean
     if features['pitch_std'] > 0:
         pitch_variation_coefficient = features['pitch_std'] / (features['pitch_mean'] + 1e-6)
-        if pitch_variation_coefficient < 0.08:  # Too smooth = AI
-            ai_score += 0.22
-            indicators.append("Unnaturally smooth pitch contour")
-        elif pitch_variation_coefficient > 0.20:  # More variation = human
-            human_score += 0.18
+        
+        if pitch_variation_coefficient < 0.15:
+            ai_score += 0.32
+            indicators.append("Unnaturally smooth pitch (AI signature)")
+        elif pitch_variation_coefficient < 0.20:
+            ai_score += 0.15
+        elif pitch_variation_coefficient > 0.30:
+            human_score += 0.22
             indicators.append("Natural pitch fluctuations")
+        
+        if features['pitch_range'] < 60:
+            ai_score += 0.15
+            indicators.append("Narrow pitch range")
+        elif features['pitch_range'] > 150:
+            human_score += 0.12
+    else:
+        ai_score += 0.20
+        indicators.append("Abnormal pitch characteristics")
     
     # 4. Energy Consistency
-    # AI voices maintain very consistent energy
     energy_consistency = features['rms_std'] / (features['rms_mean'] + 1e-6)
-    if energy_consistency < 0.25:  # Too consistent = AI
-        ai_score += 0.15
-        indicators.append("Highly consistent energy levels")
-    elif energy_consistency > 0.50:  # More variation = human
-        human_score += 0.12
+    if energy_consistency < 0.35:
+        ai_score += 0.25
+        indicators.append("Constant energy levels (AI pattern)")
+    elif energy_consistency < 0.45:
+        ai_score += 0.12
+    elif energy_consistency > 0.60:
+        human_score += 0.18
         indicators.append("Natural energy variation")
     
-    # 5. Zero Crossing Rate Pattern
-    # AI voices often have different noise characteristics
+    # 5. Zero Crossing Rate
     zcr_ratio = features['zcr_std'] / (features['zcr_mean'] + 1e-6)
-    if zcr_ratio < 0.30:  # Low = potentially AI
-        ai_score += 0.12
-        indicators.append("Artificial noise profile")
-    elif zcr_ratio > 0.65:  # Higher = human breathing, natural noise
-        human_score += 0.15
-        indicators.append("Natural noise patterns")
+    if zcr_ratio < 0.40:
+        ai_score += 0.18
+        indicators.append("Clean waveform profile")
+    elif zcr_ratio > 0.75:
+        human_score += 0.20
+        indicators.append("Natural micro-variations")
     
-    # 6. Spectral Bandwidth Analysis
-    # AI tends to have narrower, more controlled bandwidth
+    # 6. Spectral Bandwidth
     bandwidth_coefficient = features['spectral_bandwidth_std'] / (features['spectral_bandwidth_mean'] + 1e-6)
-    if bandwidth_coefficient < 0.20:  # Narrow = AI
-        ai_score += 0.13
-        indicators.append("Controlled spectral bandwidth")
-    elif bandwidth_coefficient > 0.45:  # Wider = human
+    if bandwidth_coefficient < 0.28:
+        ai_score += 0.20
+        indicators.append("Controlled frequency bandwidth")
+    elif bandwidth_coefficient > 0.55:
+        human_score += 0.15
+    
+    # 7. Spectral Rolloff
+    rolloff_consistency = features['spectral_rolloff_std'] / (features['spectral_rolloff_mean'] + 1e-6)
+    if rolloff_consistency < 0.18:
+        ai_score += 0.22
+        indicators.append("Uniform high-frequency distribution")
+    elif rolloff_consistency > 0.40:
+        human_score += 0.14
+    
+    # 8. Chroma Stability
+    if features['chroma_std'] < 0.10:
+        ai_score += 0.18
+        indicators.append("Overly stable pitch classes")
+    elif features['chroma_std'] > 0.22:
         human_score += 0.12
-        indicators.append("Natural bandwidth variation")
+    
+    # 9. Multi-Pattern Consistency Detector (Key Improvement)
+    high_consistency_count = 0
+    if spectral_consistency < 0.22:
+        high_consistency_count += 1
+    if energy_consistency < 0.35:
+        high_consistency_count += 1
+    if bandwidth_coefficient < 0.28:
+        high_consistency_count += 1
+    if rolloff_consistency < 0.18:
+        high_consistency_count += 1
+    if features['chroma_std'] < 0.10:
+        high_consistency_count += 1
+    
+    if high_consistency_count >= 3:
+        ai_score += 0.35
+        indicators.append("Multiple AI consistency patterns detected")
+    elif high_consistency_count >= 2:
+        ai_score += 0.18
+    
+    # 10. Moderate Consistency Detector
+    moderate_consistency_count = 0
+    if spectral_consistency < 0.30:
+        moderate_consistency_count += 1
+    if energy_consistency < 0.45:
+        moderate_consistency_count += 1
+    if mfcc_variance_avg < 150:
+        moderate_consistency_count += 1
+    if pitch_variation_coefficient < 0.20 and features['pitch_std'] > 0:
+        moderate_consistency_count += 1
+    
+    if moderate_consistency_count >= 3:
+        ai_score += 0.20
     
     # Calculate final confidence
     total_score = ai_score + human_score
@@ -195,11 +258,20 @@ def detect_ai_voice(features):
         ai_confidence = ai_score / total_score
         human_confidence = human_score / total_score
     else:
-        # Default to slight human bias if unclear
-        ai_confidence = 0.45
-        human_confidence = 0.55
+        ai_confidence = 0.60  # Default to AI when unclear
+        human_confidence = 0.40
     
-    # Determine classification
+    # Boost confidence if strong evidence present
+    if len(indicators) >= 5:
+        if ai_confidence > human_confidence:
+            ai_confidence = min(0.96, ai_confidence * 1.15)
+        else:
+            human_confidence = min(0.96, human_confidence * 1.15)
+    elif len(indicators) >= 3:
+        if ai_confidence > human_confidence:
+            ai_confidence = min(0.92, ai_confidence * 1.08)
+    
+    # Final classification
     if ai_confidence > human_confidence:
         classification = "AI_GENERATED"
         confidence = ai_confidence
@@ -211,11 +283,9 @@ def detect_ai_voice(features):
     if len(indicators) > 0:
         explanation = "Analysis detected: " + "; ".join(indicators[:3])
     else:
-        explanation = "Inconclusive audio features, defaulting to human classification"
+        explanation = "Balanced characteristics with moderate confidence"
     
     return classification, confidence, explanation
-
-
 
 @app.get("/")
 async def root():
@@ -297,10 +367,4 @@ async def detect_voice(request: VoiceDetectionRequest, api_key: str = Header(...
 
 if __name__ == "__main__":
     import uvicorn
-    import os
-    
-    # Read PORT from environment variable (Railway provides this)
-    port = int(os.environ.get("PORT", 8000))
-    
-    print(f"Starting server on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
